@@ -1,0 +1,43 @@
+{
+  "rows": [
+    {
+      "case": "short",
+      "model": "qwen3:4b-instruct",
+      "seconds": 0.099,
+      "prompt_tokens": 20,
+      "completion_tokens": 3
+    },
+    {
+      "case": "long",
+      "model": "qwen3:4b-instruct",
+      "seconds": 2.583,
+      "prompt_tokens": 38,
+      "completion_tokens": 200
+    },
+    {
+      "case": "cold",
+      "model": "qwen3:4b-instruct",
+      "seconds": 0.654,
+      "prompt_tokens": 20,
+      "completion_tokens": 3
+    },
+    {
+      "case": "warm",
+      "model": "qwen3:4b-instruct",
+      "seconds": 0.043,
+      "prompt_tokens": 20,
+      "completion_tokens": 3
+    }
+  ],
+  "estimates": {
+    "small": {
+      "one_run_eur": 0.0335,
+      "semester_eur": 3.28
+    },
+    "large": {
+      "one_run_eur": 2.4912,
+      "semester_eur": 244.14
+    }
+  },
+  "price_list_date": "2026-08-10"
+}

@@ -60,7 +60,8 @@ def main() -> int:
     print(f"\nThe long answer took {ratio:.0f} times as long as the short "
           f"one.\nCompare that with the ratio of their output tokens.\n")
 
-    # TODO 7. Measure the cold start, which is the number the recording
+    # TODO 7 (done below): cold start.
+    # Original instructions kept for reference. Measure the cold start, which is the number the recording
     # deliberately leaves out and the largest one you will see today.
     #
     #   1. Free the model from memory:
@@ -91,8 +92,38 @@ def main() -> int:
     #   Label them as estimates. They are not measurements and the price
     #   list is dated {PRICE_DATE}.
 
+    # --- TODO 7: cold start ------------------------------------------------
+    subprocess.run(["ollama", "stop", SMALL.name], check=False)
+    time.sleep(2)                       # let the unload finish
+    cold_reply, cold_s = timed(client, SHORT, SMALL.name)
+    warm_reply, warm_s = timed(client, SHORT, SMALL.name)
+    for label, rep, secs in (("cold", cold_reply, cold_s),
+                             ("warm", warm_reply, warm_s)):
+        rows.append({
+            "case": label, "model": SMALL.name, "seconds": round(secs, 3),
+            "prompt_tokens": rep.usage.prompt_tokens,
+            "completion_tokens": rep.usage.completion_tokens,
+        })
+    print(f"cold start: {cold_s:.2f}s   warm: {warm_s:.2f}s   "
+          f"ratio: {cold_s / max(warm_s, 1e-9):.1f}x\n")
+
+    # --- TODO 8: nightly evaluation estimate (ESTIMATE, not measurement) ---
+    long_row = next(r for r in rows if r["case"] == "long")
+    cases, nights = 200, 14 * 7
+    estimates = {}
+    for tier in ("small", "large"):
+        one_run = estimate(cases * long_row["prompt_tokens"],
+                           cases * long_row["completion_tokens"], tier=tier)
+        estimates[tier] = {"one_run_eur": round(one_run.total, 4),
+                           "semester_eur": round(one_run.total * nights, 2)}
+        print(f"{tier:<6} tier: {one_run.total:.4f} EUR per run, "
+              f"{one_run.total * nights:.2f} EUR for {nights} nights "
+              f"(ESTIMATE, price list {PRICE_DATE})")
+    print()
+
     write_json("artifacts/week01_cost.json",
-               {"rows": rows, "price_list_date": PRICE_DATE})
+               {"rows": rows, "estimates": estimates,
+                "price_list_date": PRICE_DATE})
     print(local_cost_note())
     return 0
 

@@ -43,7 +43,12 @@ def main() -> int:
         #     temperature=0.0
         #     max_tokens=200
         #   Assign the result to `reply`.
-        reply = None
+        reply = client.chat.completions.create(
+            model=SMALL.name,
+            messages=[{"role": "user", "content": QUESTION}],
+            temperature=0.0,
+            max_tokens=200,
+        )
 
         elapsed = time.perf_counter() - started
 
@@ -68,7 +73,21 @@ def main() -> int:
     #   d. the elapsed time           `elapsed`, computed above
     #      Which part of it would a user actually feel?
     #
-    print("\n--- TODO 2: print the four things here ---\n")
+    answer = reply.choices[0].message.content
+    finish = reply.choices[0].finish_reason
+    print(f"answer:            {answer}")
+    # "stop" = the model ended the answer itself. "length" = it hit
+    # max_tokens and was cut off. A program tells them apart by checking
+    # this field, never by guessing from the text.
+    print(f"finish reason:     {finish}"
+          + ("   <-- TRUNCATED, do not trust this answer"
+             if finish == "length" else ""))
+    # Prompt tokens are set by what we send; completion tokens are bounded
+    # by max_tokens and by how long we let the model talk.
+    print(f"prompt tokens:     {reply.usage.prompt_tokens}")
+    print(f"completion tokens: {reply.usage.completion_tokens}   "
+          f"(capped by max_tokens=200)")
+    print(f"elapsed:           {elapsed:.2f} s")
 
     # TODO 3. Close the trace.
     #   Call rec.finish(...) with:
@@ -81,6 +100,8 @@ def main() -> int:
     #   It should report one record in traces.jsonl. From week 4 onward
     #   every run your system makes lands in that file, and week 10 builds
     #   the evaluation harness on it.
+
+    rec.finish(output=answer, outcome="ok")
 
     # A free number, so that cost is visible from day one. Local calls cost
     # nothing, which is convenient and also a distortion, so the course keeps

@@ -54,7 +54,7 @@ def count_distinct(texts: list[str]) -> int:
     noticing that you cannot is the point. Week 10 spends the whole session
     on it.
     """
-    raise NotImplementedError("TODO 4: count the distinct strings")
+    return len(set(texts))
 
 
 def summarize(cell_name: str, texts: list[str], latencies: list[float]) -> dict:
@@ -90,17 +90,25 @@ def from_live(full: bool) -> list[dict]:
     from openai import OpenAI
     client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
     rows = []
-    for pname, prompt in LIVE_CELLS.items():
-        for tname, temp in (("t00", 0.0), ("t10", 1.0)):
-            texts, lats = [], []
-            for _ in range(LIVE_RUNS):
-                t0 = time.perf_counter()
-                reply = client.chat.completions.create(
-                    model=SMALL.name, temperature=temp, max_tokens=200,
-                    messages=[{"role": "user", "content": prompt}])
-                lats.append(time.perf_counter() - t0)
-                texts.append(reply.choices[0].message.content.strip())
-            rows.append(summarize(f"{pname}|{tname}", texts, lats))
+    if full:
+        # all eight cells: same prompts and temperatures as the recording
+        payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        cells = [(name, c["prompt"], c["temperature"])
+                 for name, c in payload["cells"].items()]
+    else:
+        cells = [(f"{pname}|{tname}", prompt, temp)
+                 for pname, prompt in LIVE_CELLS.items()
+                 for tname, temp in (("t00", 0.0), ("t10", 1.0))]
+    for cell_name, prompt, temp in cells:
+        texts, lats = [], []
+        for _ in range(LIVE_RUNS):
+            t0 = time.perf_counter()
+            reply = client.chat.completions.create(
+                model=SMALL.name, temperature=temp, max_tokens=200,
+                messages=[{"role": "user", "content": prompt}])
+            lats.append(time.perf_counter() - t0)
+            texts.append(reply.choices[0].message.content.strip())
+        rows.append(summarize(cell_name, texts, lats))
     return rows
 
 
